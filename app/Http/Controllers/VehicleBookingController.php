@@ -28,17 +28,17 @@ class VehicleBookingController extends Controller
     | Dashboard
     |--------------------------------------------------------------------------
     */
-    public function dashboard(): Response
-    {
-        return Inertia::render('Dashboard/Index', [
-            'stats' => [
-                'totalRevenue'  => Booking::sum('total_price'),
-                'totalBookings' => Booking::count(),
-                'totalCustomers'=> Customer::count(),
-                'totalVehicles' => Vehicle::count(),
-            ]
-        ]);
-    }
+    // public function dashboard(): Response
+    // {
+    //     return Inertia::render('Dashboard/Index', [
+    //         'stats' => [
+    //             'totalRevenue'  => Booking::sum('total_price'),
+    //             'totalBookings' => Booking::count(),
+    //             'totalCustomers'=> Customer::count(),
+    //             'totalVehicles' => Vehicle::count(),
+    //         ]
+    //     ]);
+    // }
 
     /*
     |--------------------------------------------------------------------------
@@ -81,23 +81,49 @@ class VehicleBookingController extends Controller
         ]);
     }
 
-    public function storeVehicle(StoreVehicleRequest $request): Response
+   /**
+ * Store New Vehicle
+ */
+public function storeVehicle(StoreVehicleRequest $request)
 {
     $this->vehicleService->create($request->validated());
 
-    return Inertia::render('Vehicles/Index', [
-        'vehicles' => $this->vehicleService->all(),
-        'flash' => ['success' => 'Vehicle created successfully']
-    ]);
+    return redirect()->route('vehicles.index')
+        ->with('success', 'Vehicle created successfully.');
 }
 
-    public function deleteVehicle(Vehicle $vehicle): RedirectResponse
-    {
-        $this->vehicleService->delete($vehicle);
+/**
+ * Update Vehicle
+ */
+public function updateVehicle(StoreVehicleRequest $request, Vehicle $vehicle)
+{
+    $this->vehicleService->update($vehicle, $request->validated());
 
-        return back()->with('success', 'Vehicle deleted successfully.');
-    }
+    return redirect()->route('vehicles.index')
+        ->with('success', 'Vehicle updated successfully.');
+}
 
+/**
+ * Toggle Vehicle Availability (for Switch)
+ */
+public function toggleAvailability(Vehicle $vehicle)
+{
+    $this->vehicleService->toggleAvailability($vehicle);
+
+    return redirect()->route('vehicles.index')
+        ->with('success', 'Vehicle availability updated.');
+}
+
+/**
+ * Delete Vehicle
+ */
+public function deleteVehicle(Vehicle $vehicle)
+{
+    $this->vehicleService->delete($vehicle);
+
+    return redirect()->route('vehicles.index')
+        ->with('success', 'Vehicle deleted successfully.');
+}
     /*
     |--------------------------------------------------------------------------
     | Bookings
@@ -108,20 +134,59 @@ class VehicleBookingController extends Controller
         return Inertia::render('Bookings/Index', [
             'bookings'  => $this->bookingService->all(),
             'customers' => Customer::select('id', 'name')->get(),
-            'vehicles'  => Vehicle::select('id', 'name')->where('available', true)->get(),
+            'vehicles'  => Vehicle::select('id', 'name', 'price_per_day')
+    ->where('available', true)
+    ->get(),
         ]);
     }
 
-    public function storeBooking(StoreBookingRequest $request): RedirectResponse
-    {
-        try {
-            $this->bookingService->create($request->validated());
+   public function storeBooking(StoreBookingRequest $request): RedirectResponse
+{
+    $this->bookingService->create($request->validated());
 
-            return back()->with('success', 'Booking created successfully.');
-        } catch (\Throwable $e) {
-            return back()->with('error', $e->getMessage());
-        }
+    return back()->with('success', 'Booking created successfully.');
+}
+
+
+/**
+ * Update an existing booking
+ */
+public function updateBooking(StoreBookingRequest $request, Booking $booking)
+{
+    try {
+        $updatedBooking = $this->bookingService->update(
+            $booking,
+            $request->validated()
+        );
+
+        return redirect()
+            ->route('bookings.index')
+            ->with('success', 'Booking updated successfully.');
+
+    } catch (\Exception $e) {
+        return redirect()
+            ->back()
+            ->with('error', $e->getMessage())
+            ->withInput();
     }
+}
+    public function dashboard(): Response
+{
+    return Inertia::render('Dashboard', [
+        'stats' => [
+            'totalRevenue'  => Booking::sum('total_price'),
+            'totalBookings' => Booking::count(),
+            'totalCustomers'=> Customer::count(),
+            'totalVehicles' => Vehicle::count(),
+        ],
+
+        // latest bookings with relations
+        'recentBookings' => Booking::with(['customer', 'vehicle'])
+            ->latest()
+            ->take(5)
+            ->get()
+    ]);
+}
 
     public function deleteBooking(Booking $booking): RedirectResponse
     {

@@ -15,26 +15,30 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Route::get('/dashboard', function () {
+//     return Inertia::render('Dashboard');
+// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth'])->group(function() {
 
-
+    Route::get('/dashboard', [VehicleBookingController::class, 'dashboard'])
+    ->name('dashboard');
     // Customers
     Route::get('/customers',[VehicleBookingController::class,'customers'])->name('customers.index');
     Route::post('/customers',[VehicleBookingController::class,'storeCustomer'])->name('customers.store');
     Route::delete('/customers/{customer}',[VehicleBookingController::class,'deleteCustomer'])->name('customers.delete');
 
-    // Vehicles
-    Route::get('/vehicles',[VehicleBookingController::class,'vehicles'])->name('vehicles.index');
-    Route::post('/vehicles',[VehicleBookingController::class,'storeVehicle'])->name('vehicles.store');
-    Route::delete('/vehicles/{vehicle}',[VehicleBookingController::class,'deleteVehicle'])->name('vehicles.delete');
+   // Vehicles
+    Route::get('/vehicles', [VehicleBookingController::class, 'vehicles'])->name('vehicles.index');
+    Route::post('/vehicles', [VehicleBookingController::class, 'storeVehicle'])->name('vehicles.store');
+    Route::put('/vehicles/{vehicle}', [VehicleBookingController::class, 'updateVehicle'])->name('vehicles.update');
+    Route::put('/vehicles/{vehicle}/toggle', [VehicleBookingController::class, 'toggleAvailability'])->name('vehicles.toggle');
+    Route::delete('/vehicles/{vehicle}', [VehicleBookingController::class, 'deleteVehicle'])->name('vehicles.delete');
 
     // Bookings
     Route::get('/bookings',[VehicleBookingController::class,'bookings'])->name('bookings.index');
     Route::post('/bookings',[VehicleBookingController::class,'storeBooking'])->name('bookings.store');
+    Route::put('/bookings/{booking}',[VehicleBookingController::class,'updateBooking'])->name('bookings.update');
     Route::delete('/bookings/{booking}',[VehicleBookingController::class,'deleteBooking'])->name('bookings.delete');
 
 });
